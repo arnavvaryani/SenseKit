@@ -23,12 +23,13 @@ public struct SpatialPosition: Sendable, Hashable {
     
     // Convenience positions
     public static let center = SpatialPosition(x: 0, y: 0, z: 0)
-    public static let left = SpatialPosition(x: -1, y: 0, z: 0)
-    public static let right = SpatialPosition(x: 1, y: 0, z: 0)
-    public static let front = SpatialPosition(x: 0, y: 0, z: 1)
-    public static let back = SpatialPosition(x: 0, y: 0, z: -1)
-    public static let above = SpatialPosition(x: 0, y: 1, z: 0)
-    public static let below = SpatialPosition(x: 0, y: -1, z: 0)
+    public static let left = SpatialPosition(x: -5, y: 0, z: 0)
+    public static let right = SpatialPosition(x: 5, y: 0, z: 0)
+    public static let front = SpatialPosition(x: 0, y: 5, z: 0)
+    public static let back = SpatialPosition(x: 0, y: -5, z: 0)
+    public static let up = SpatialPosition(x: 0, y: 1, z: -5)
+    public static let down = SpatialPosition(x: 0, y: -1, z: 5)
+    
 }
 
 /// Speech item with spatial positioning

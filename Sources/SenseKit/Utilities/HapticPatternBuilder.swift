@@ -14,7 +14,7 @@ public enum HapticPatternBuilder {
     /// A single, continuous haptic event
     public static func continuous(
         intensity: Float = 1.0,
-        sharpness: Float = 0.5,
+        sharpness: Float = 0.5
     ) throws -> CHHapticPattern {
         let params = [
             CHHapticEventParameter(parameterID: .hapticIntensity, value: intensity),
@@ -38,7 +38,7 @@ public enum HapticPatternBuilder {
         intensity: Float = 1.0,
         sharpness: Float = 0.8,
         interval: TimeInterval = 0.2,
-        count: Int = 1000,
+        count: Int = 1000
     ) throws -> CHHapticPattern {
         var events = [CHHapticEvent]()
         for i in 0..<count {

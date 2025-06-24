@@ -20,7 +20,6 @@ struct SinWaveGeneratorTests {
         let generator = SinWaveGenerator(
             frequency: 440,
             sampleRate: 44100,
-            audioEngine: mockEngine
         )
         
         #expect(generator != nil)
@@ -31,7 +30,7 @@ struct SinWaveGeneratorTests {
     @Test("Start begins audio engine")
     func startBeginsEngine() throws {
         let mockEngine = MockAudioEngine()
-        let generator = SinWaveGenerator(frequency: 440, audioEngine: mockEngine)
+        let generator = SinWaveGenerator(frequency: 440)
         
         try generator.start()
         
@@ -42,7 +41,7 @@ struct SinWaveGeneratorTests {
     @Test("Stop stops audio engine")
     func stopStopsEngine() throws {
         let mockEngine = MockAudioEngine()
-        let generator = SinWaveGenerator(frequency: 440, audioEngine: mockEngine)
+        let generator = SinWaveGenerator(frequency: 440)
         
         try generator.start()
         generator.stop()
@@ -54,7 +53,7 @@ struct SinWaveGeneratorTests {
     @Test("Multiple start calls are idempotent")
     func multipleStartsIdempotent() throws {
         let mockEngine = MockAudioEngine()
-        let generator = SinWaveGenerator(frequency: 440, audioEngine: mockEngine)
+        let generator = SinWaveGenerator(frequency: 440)
         
         try generator.start()
         try generator.start()
@@ -68,7 +67,7 @@ struct SinWaveGeneratorTests {
         let mockEngine = MockAudioEngine()
         
         do {
-            let generator = SinWaveGenerator(frequency: 440, audioEngine: mockEngine)
+            let generator = SinWaveGenerator(frequency: 440)
             try generator.start()
             #expect(mockEngine.attachedNodes.count == 1)
         }

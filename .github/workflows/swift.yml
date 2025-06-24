@@ -1,47 +1,18 @@
-# This workflow will build a Swift project
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-swift
+name: Swift
 
-name: Swift Tests
-
-on:
+on: 
   push:
-    branches: [main]
+    branches: [ master ] 
   pull_request:
-    branches: [main]
+    branches: [ master ] 
+
 
 jobs:
-  ios_tests:
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: List iOS simulators
-        run: xcrun simctl list devicetypes
-
-      - name: Build for testing
-        run: |
-          xcodebuild \
-            -scheme SenseKit \
-            -destination 'platform=iOS Simulator,name=iPhone 16,OS=18.5' \
-            build-for-testing | xcpretty
-
-      - name: Run tests on simulator
-        run: |
-          xcodebuild \
-            -scheme SenseKit \
-            -destination 'platform=iOS Simulator,name=iPhone 16,OS=18.5' \
-            test-without-building | xcpretty
-
-  spm_tests:
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Swift
-        uses: swift-actions/setup-swift@v2
-        with:
-          swift-version: '6.1'
-
-      - name: SwiftPM unit tests
-        run: |
-          swift test
+  build: 
+    runs-on: macos-latest 
+    steps: 
+    - uses: actions/checkout@v2 
+    - name: Build
+      run: swift build -v 
+    - name: Run tests
+      run: swift test -v 

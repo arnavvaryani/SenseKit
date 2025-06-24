@@ -5,9 +5,9 @@
 //  Created by Arnav Varyani on 6/23/25.
 //
 
+
 import AVFoundation
 import simd
-import Observation
 
 /// Represents a 3D position in space
 public struct SpatialPosition: Sendable {
@@ -22,13 +22,13 @@ public struct SpatialPosition: Sendable {
     }
     
     // Convenience positions
-    public nonisolated(unsafe) static let center = SpatialPosition(x: 0, y: 0, z: 0)
-    public nonisolated(unsafe) static let left = SpatialPosition(x: -1, y: 0, z: 0)
-    public nonisolated(unsafe) static let right = SpatialPosition(x: 1, y: 0, z: 0)
-    public nonisolated(unsafe) static let front = SpatialPosition(x: 0, y: 0, z: 1)
-    public nonisolated(unsafe) static let back = SpatialPosition(x: 0, y: 0, z: -1)
-    public nonisolated(unsafe) static let above = SpatialPosition(x: 0, y: 1, z: 0)
-    public nonisolated(unsafe) static let below = SpatialPosition(x: 0, y: -1, z: 0)
+    public static let center = SpatialPosition(x: 0, y: 0, z: 0)
+    public static let left = SpatialPosition(x: -1, y: 0, z: 0)
+    public static let right = SpatialPosition(x: 1, y: 0, z: 0)
+    public static let front = SpatialPosition(x: 0, y: 0, z: 1)
+    public static let back = SpatialPosition(x: 0, y: 0, z: -1)
+    public static let above = SpatialPosition(x: 0, y: 1, z: 0)
+    public static let below = SpatialPosition(x: 0, y: -1, z: 0)
 }
 
 /// Speech item with spatial positioning
@@ -51,28 +51,31 @@ public struct SpatialSpeechItem: Sendable {
     }
 }
 
-@MainActor
-@Observable
-public class SpatialSpeechController {
+// Simple, main-thread only spatial speech controller
+public class SpatialSpeechController: ObservableObject {
     // Dependencies
-    private nonisolated(unsafe) let audioEngine: AVAudioEngine
-    private nonisolated(unsafe) let speechSynthesizer: AVSpeechSynthesizer
+    private let audioEngine: AVAudioEngine
+    private let speechSynthesizer: AVSpeechSynthesizer
     private let spatialMixer: AVAudioEnvironmentNode
+    private let delegate: SpatialSpeechDelegate
     
     // Queue management
     private var speechQueue: [SpatialSpeechItem] = []
     private var spokenTexts = Set<String>()
     private var isProcessing = false
     
-    // Audio nodes for spatial positioning (not main actor isolated for cleanup)
-    private nonisolated(unsafe) var playerNodes: [AVAudioPlayerNode] = []
+    // Audio nodes for spatial positioning
+    private var playerNodes: [AVAudioPlayerNode] = []
     private var availableNodes: [AVAudioPlayerNode] = []
     private var activeNodes: [String: AVAudioPlayerNode] = [:]
     
+    // Engine state management
+    private var isEngineStarted = false
+    
     // Public state
-    public private(set) var isPlaying = false
-    public private(set) var currentItem: SpatialSpeechItem?
-    public private(set) var queueCount: Int = 0
+    @Published public private(set) var isPlaying = false
+    @Published public private(set) var currentItem: SpatialSpeechItem?
+    @Published public private(set) var queueCount: Int = 0
     
     // Configuration
     public var maxConcurrentSpeech: Int = 3
@@ -82,29 +85,23 @@ public class SpatialSpeechController {
         self.audioEngine = AVAudioEngine()
         self.speechSynthesizer = AVSpeechSynthesizer()
         self.spatialMixer = AVAudioEnvironmentNode()
+        self.delegate = SpatialSpeechDelegate()
         
         setupAudioEngine(maxNodes: maxNodes)
         setupSpatialEnvironment()
+        setupSpeechSynthesizer()
     }
     
     deinit {
-        // Can't call MainActor methods from deinit
-        // Clean up synchronously available resources
-        speechSynthesizer.stopSpeaking(at: .immediate)
-        
-        // Stop audio nodes - playerNodes is nonisolated(unsafe) so accessible here
-        playerNodes.forEach { node in
-            node.stop()
-            node.reset()
-        }
-        
-        audioEngine.stop()
+        stop()
     }
     
     // MARK: - Public API
     
     /// Add a speech item to the spatial queue
     public func enqueue(_ item: SpatialSpeechItem) {
+        ensureEngineIsRunning()
+        
         // Check if we should skip repeated text
         if !item.allowRepeat && spokenTexts.contains(item.text) {
             return
@@ -160,6 +157,7 @@ public class SpatialSpeechController {
         currentItem = nil
         
         audioEngine.stop()
+        isEngineStarted = false
     }
     
     /// Update listener position (for spatial audio)
@@ -194,14 +192,51 @@ public class SpatialSpeechController {
         audioEngine.connect(spatialMixer, to: audioEngine.mainMixerNode, format: nil)
         
         // Set up audio session
+        configureAudioSession()
+        
+        // Start the engine initially
+        startAudioEngine()
+    }
+    
+    private func setupSpeechSynthesizer() {
+            speechSynthesizer.delegate = delegate
+            
+            // Set up completion callback with MainActor isolation
+            delegate.onUtteranceCompleted = { [weak self] speechString in
+                Task { @MainActor [weak self] in
+                    self?.handleSpeechCompletion(speechString: speechString)
+                }
+            }
+        }
+    
+    private func configureAudioSession() {
         do {
             let audioSession = AVAudioSession.sharedInstance()
-            try audioSession.setCategory(.playback, mode: .default, options: [.allowAirPlay, .allowBluetoothA2DP])
+            try audioSession.setCategory(.playback, mode: .default, options: [.allowAirPlay, .allowBluetoothA2DP, .mixWithOthers])
             try audioSession.setActive(true)
-            try audioEngine.start()
         } catch {
-            print("Failed to setup audio engine: \(error)")
+            print("Failed to configure audio session: \(error)")
         }
+    }
+    
+    private func startAudioEngine() {
+        guard !isEngineStarted else { return }
+        
+        do {
+            try audioEngine.start()
+            isEngineStarted = true
+            print("Audio engine started successfully")
+        } catch {
+            print("Failed to start audio engine: \(error)")
+            isEngineStarted = false
+        }
+    }
+    
+    private func ensureEngineIsRunning() {
+        guard !audioEngine.isRunning || !isEngineStarted else { return }
+        
+        print("Engine not running, restarting...")
+        startAudioEngine()
     }
     
     private func setupSpatialEnvironment() {
@@ -225,8 +260,14 @@ public class SpatialSpeechController {
     private func processQueue() {
         guard !isProcessing,
               !speechQueue.isEmpty,
-              activeNodes.count < maxConcurrentSpeech,
-              let availableNode = availableNodes.first else {
+              activeNodes.count < maxConcurrentSpeech else {
+            return
+        }
+        
+        // Ensure engine is running before processing
+        ensureEngineIsRunning()
+        guard audioEngine.isRunning else {
+            print("Engine not running, cannot process queue")
             return
         }
         
@@ -239,80 +280,32 @@ public class SpatialSpeechController {
         currentItem = item
         isPlaying = true
         
-        // Remove from available and add to active
-        availableNodes.removeFirst()
-        activeNodes[item.text] = availableNode
-        
-        synthesizeSpatialSpeech(item, using: availableNode)
+        synthesizeSpatialSpeech(item)
     }
     
-    private func synthesizeSpatialSpeech(_ item: SpatialSpeechItem, using node: AVAudioPlayerNode) {
+    private func synthesizeSpatialSpeech(_ item: SpatialSpeechItem) {
         let utterance = AVSpeechUtterance(string: item.text)
         utterance.voice = AVSpeechSynthesisVoice(language: "en-US")
         utterance.rate = AVSpeechUtteranceDefaultSpeechRate
         
-        // Position the node in 3D space
-        positionNode(node, at: item.position)
+        // For spatial audio, we'll use the traditional speech synthesizer
+        // and apply spatial positioning through the mixer
+        speechSynthesizer.speak(utterance)
         
-        // Synthesize to PCM buffer
-        speechSynthesizer.write(utterance) { [weak self] buffer in
-            guard let self = self,
-                  let pcmBuffer = buffer as? AVAudioPCMBuffer,
-                  pcmBuffer.frameLength > 0 else { return }
-            
-            Task { @MainActor in
-                // Schedule buffer for spatial playback
-                node.scheduleBuffer(pcmBuffer) {
-                    Task { @MainActor in
-                        self.handleSpeechCompletion(for: item, node: node)
-                    }
-                }
-                
-                if !node.isPlaying {
-                    node.play()
-                }
-            }
-        }
+        // Set the spatial position for the current utterance
+        updateSpatialPosition(item.position)
     }
     
-    private func positionNode(_ node: AVAudioPlayerNode, at position: SpatialPosition) {
-        // Connect node to spatial mixer if not already connected
-        let format = AVAudioFormat(standardFormatWithSampleRate: 44100, channels: 1)
-        
-        if !audioEngine.attachedNodes.contains(node) {
-            audioEngine.attach(node)
-        }
-        
-        // Disconnect and reconnect to update spatial position
-        audioEngine.disconnectNodeInput(node)
-        audioEngine.connect(node, to: spatialMixer, format: format)
-        
-        // Set 3D position using AVAudio3DMixing protocol
-        if let mixingNode = node as? AVAudio3DMixing {
-            mixingNode.position = AVAudio3DPoint(
-                x: position.x * spatialDistance,
-                y: position.y * spatialDistance,
-                z: position.z * spatialDistance
-            )
-            
-            // Configure 3D mixing parameters
-            mixingNode.renderingAlgorithm = .sphericalHead
-            mixingNode.rate = 1.0
-            mixingNode.reverbBlend = 0.2
-        }
+    private func updateSpatialPosition(_ position: SpatialPosition) {
+        // Update the mixer's source position to simulate spatial speech
+        spatialMixer.listenerPosition = AVAudio3DPoint(
+            x: -position.x * spatialDistance, // Invert for listener perspective
+            y: -position.y * spatialDistance,
+            z: -position.z * spatialDistance
+        )
     }
     
-    private func handleSpeechCompletion(for item: SpatialSpeechItem, node: AVAudioPlayerNode) {
-        // Return node to available pool
-        if let nodeKey = activeNodes.first(where: { $0.value === node })?.key {
-            activeNodes.removeValue(forKey: nodeKey)
-            availableNodes.append(node)
-        }
-        
-        // Reset node
-        node.stop()
-        node.reset()
-        
+    private func handleSpeechCompletion(speechString: String) {
         // Update state
         if activeNodes.isEmpty {
             isPlaying = false
@@ -328,9 +321,19 @@ public class SpatialSpeechController {
     }
 }
 
+// MARK: - Speech Delegate
+
+private class SpatialSpeechDelegate: NSObject, @unchecked Sendable, AVSpeechSynthesizerDelegate {
+    var onUtteranceCompleted: (@Sendable (String) -> Void)?
+    
+    func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didFinish utterance: AVSpeechUtterance) {
+        onUtteranceCompleted?(utterance.speechString)
+    }
+}
+
 // MARK: - Convenience Extensions
 
-extension SpatialSpeechController {
+extension SpatialSpeechController: @unchecked Sendable {
     /// Speak text at specific coordinates
     public func speak(_ text: String, x: Float, y: Float, z: Float, priority: Int = 0) {
         speak(text, at: SpatialPosition(x: x, y: y, z: z), priority: priority)

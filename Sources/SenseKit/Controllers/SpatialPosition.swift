@@ -10,7 +10,7 @@ import AVFoundation
 import simd
 
 /// Represents a 3D position in space
-public struct SpatialPosition: Sendable {
+public struct SpatialPosition: Sendable, Hashable {
     public let x: Float  // Left(-) to Right(+)
     public let y: Float  // Down(-) to Up(+)
     public let z: Float  // Behind(-) to Front(+)

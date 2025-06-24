@@ -1,5 +1,5 @@
 //
-//  HapticController 2.swift
+//  HapticController.swift
 //  SenseKit
 //
 //  Created by Arnav Varyani on 6/13/25.

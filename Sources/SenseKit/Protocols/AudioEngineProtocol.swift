@@ -4,7 +4,6 @@
 //
 //  Created by Arnav Varyani on 6/13/25.
 //
-
 import AVFoundation
 import CoreHaptics
 
@@ -22,12 +21,15 @@ public protocol AudioEngineProtocol: AnyObject {
 /// Abstraction over AVAudioPlayerNode
 public protocol AudioPlayerNodeProtocol: AnyObject {
     var avAudioNode: AVAudioNode { get }
+    var isPlaying: Bool { get }
     func scheduleBuffer(_ buffer: AVAudioPCMBuffer,
                         at when: AVAudioTime?,
                         options: AVAudioPlayerNodeBufferOptions,
                         completionHandler: (() -> Void)?)
+    func outputFormat(forBus bus: AVAudioNodeBus) -> AVAudioFormat
     func play()
     func stop()
+    func reset()
 }
 
 /// Abstraction over CHHapticEngine
@@ -52,6 +54,7 @@ public protocol WaveGeneratorProtocol: AnyObject {
 // MARK: - Conformances
 
 extension AVAudioEngine: AudioEngineProtocol {}
+
 extension AVAudioPlayerNode: AudioPlayerNodeProtocol {
     public var avAudioNode: AVAudioNode { self }
 }

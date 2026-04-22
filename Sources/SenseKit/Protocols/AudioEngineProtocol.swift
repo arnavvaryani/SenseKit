@@ -25,7 +25,7 @@ public protocol AudioPlayerNodeProtocol: AnyObject {
     func scheduleBuffer(_ buffer: AVAudioPCMBuffer,
                         at when: AVAudioTime?,
                         options: AVAudioPlayerNodeBufferOptions,
-                        completionHandler: (() -> Void)?)
+                        completionHandler: (@Sendable() -> Void)?)
     func outputFormat(forBus bus: AVAudioNodeBus) -> AVAudioFormat
     func play()
     func stop()

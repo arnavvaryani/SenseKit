@@ -31,6 +31,7 @@ jobs:
           -scheme SenseKit \
           -destination "platform=iOS Simulator,id=$DEVICE_ID" \
           -skipPackagePluginValidation \
+          -parallel-testing-enabled NO \
           -test-timeouts-enabled YES \
           -default-test-execution-time-allowance 60 \
           -maximum-test-execution-time-allowance 120

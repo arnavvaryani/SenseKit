@@ -35,7 +35,7 @@ public protocol AudioPlayerNodeProtocol: AnyObject {
 /// Abstraction over CHHapticEngine
 public protocol HapticEngineProtocol: AnyObject {
     func start() throws
-    func stop(completionHandler: CHHapticEngine.CompletionHandler?)
+    func stop(completionHandler: (@Sendable (Error?) -> Void)?)
     func makePlayer(with pattern: CHHapticPattern) throws -> HapticPatternPlayerProtocol
 }
 
@@ -76,7 +76,7 @@ public final class CHHapticEngineWrapper: HapticEngineProtocol {
         try engine.start()
     }
     
-    public func stop(completionHandler: CHHapticEngine.CompletionHandler?) {
+    public func stop(completionHandler: (@Sendable (Error?) -> Void)?) {
         engine.stop(completionHandler: completionHandler)
     }
     

@@ -15,5 +15,5 @@ public protocol SpeechSynthesizerProtocol: AnyObject, Sendable {
     func continueSpeaking() -> Bool
 }
 
-extension AVSpeechSynthesizer: @unchecked Sendable {}
+extension AVSpeechSynthesizer: @retroactive @unchecked Sendable {}
 extension AVSpeechSynthesizer: SpeechSynthesizerProtocol {}

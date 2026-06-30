@@ -105,7 +105,7 @@ final class MockHapticEngine: HapticEngineProtocol {
         isStarted = true
     }
     
-    func stop(completionHandler: CHHapticEngine.CompletionHandler?) {
+    func stop(completionHandler: (@Sendable (Error?) -> Void)?) {
         stopCallCount += 1
         isStarted = false
         createdPlayers.forEach { $0.forceStop() }

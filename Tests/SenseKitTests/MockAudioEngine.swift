@@ -73,14 +73,27 @@ final class MockAudioPlayerNode: AudioPlayerNodeProtocol {
         completionHandler?()
     }
     
+    func outputFormat(forBus bus: AVAudioNodeBus) -> AVAudioFormat {
+        return AVAudioFormat(
+            commonFormat: .pcmFormatFloat32,
+            sampleRate: 44100,
+            channels: 1,
+            interleaved: false
+        )!
+    }
+
     func play() {
         playCallCount += 1
         isPlaying = true
     }
-    
+
     func stop() {
         stopCallCount += 1
         isPlaying = false
+        scheduledBuffers.removeAll()
+    }
+
+    func reset() {
         scheduledBuffers.removeAll()
     }
 }

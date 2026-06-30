@@ -66,21 +66,34 @@ final class MockAudioPlayerNode: AudioPlayerNodeProtocol {
     func scheduleBuffer(_ buffer: AVAudioPCMBuffer,
                         at when: AVAudioTime?,
                         options: AVAudioPlayerNodeBufferOptions,
-                        completionHandler: (() -> Void)?) {
+                        completionHandler: (@Sendable () -> Void)?) {
         scheduledBuffers.append(buffer)
         lastScheduledTime = when
         lastScheduledOptions = options
         completionHandler?()
     }
     
+    func outputFormat(forBus bus: AVAudioNodeBus) -> AVAudioFormat {
+        return AVAudioFormat(
+            commonFormat: .pcmFormatFloat32,
+            sampleRate: 44100,
+            channels: 1,
+            interleaved: false
+        )!
+    }
+
     func play() {
         playCallCount += 1
         isPlaying = true
     }
-    
+
     func stop() {
         stopCallCount += 1
         isPlaying = false
+        scheduledBuffers.removeAll()
+    }
+
+    func reset() {
         scheduledBuffers.removeAll()
     }
 }
@@ -105,7 +118,7 @@ final class MockHapticEngine: HapticEngineProtocol {
         isStarted = true
     }
     
-    func stop(completionHandler: CHHapticEngine.CompletionHandler?) {
+    func stop(completionHandler: (@Sendable (Error?) -> Void)?) {
         stopCallCount += 1
         isStarted = false
         createdPlayers.forEach { $0.forceStop() }

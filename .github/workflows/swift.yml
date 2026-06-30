@@ -6,13 +6,28 @@ on:
   pull_request:
     branches: [ "main", "master" ]
 
-
 jobs:
-  build: 
-    runs-on: macos-latest 
-    steps: 
+  build:
+    runs-on: macos-latest
+    steps:
     - uses: actions/checkout@v4
-    - name: Build
-      run: swift build -v 
-    - name: Run tests
-      run: swift test -v 
+    - name: Build (iOS Simulator)
+      run: |
+        xcodebuild build \
+          -scheme SenseKit \
+          -destination 'generic/platform=iOS Simulator' \
+          -skipPackagePluginValidation
+    - name: Test (iOS Simulator)
+      run: |
+        # Pick the first available iOS Simulator device so we don't depend on a
+        # specific device/OS name being present on the runner image.
+        DEVICE_ID=$(xcrun simctl list devices available --json \
+          | python3 -c "import sys,json;d=json.load(sys.stdin)['devices'];ids=[dev['udid'] for rt,ds in d.items() if 'iOS' in rt for dev in ds];print(ids[0] if ids else '')")
+        if [ -z "$DEVICE_ID" ]; then
+          echo "No iOS Simulator available; skipping tests (build already verified)."
+          exit 0
+        fi
+        xcodebuild test \
+          -scheme SenseKit \
+          -destination "platform=iOS Simulator,id=$DEVICE_ID" \
+          -skipPackagePluginValidation

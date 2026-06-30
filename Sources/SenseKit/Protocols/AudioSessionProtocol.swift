@@ -14,5 +14,5 @@ public protocol AudioSessionProtocol: Sendable {
     func setActive(_ active: Bool) throws
 }
 
-extension AVAudioSession: @unchecked Sendable {}
+extension AVAudioSession: @retroactive @unchecked Sendable {}
 

@@ -10,32 +10,39 @@ import AVFoundation
 import CoreHaptics
 
 public class PulsatingSinWaveGenerator: WaveGeneratorProtocol {
-    private let audioEngine = AVAudioEngine()
-    private let player = AVAudioPlayerNode()
-    private let hapticEngine: CHHapticEngine
+    private let audioEngine: AudioEngineProtocol
+    private let player: AudioPlayerNodeProtocol
+    private let hapticEngine: HapticEngineProtocol
     private let buffer: AVAudioPCMBuffer
-    private let hapticPlayer: CHHapticPatternPlayer
+    private let hapticPlayer: HapticPatternPlayerProtocol
     private let pulseInterval: TimeInterval
     private let pulseDuration: TimeInterval
-    
+
     private var isRunning = false
-    
+
     public init(
         frequency: Double = 400,
         sampleRate: Double = 44_100,
         amplitude: Float = 1.0,
         pulseInterval: TimeInterval = 0.2,
-        pulseDuration: TimeInterval = 0.1
+        pulseDuration: TimeInterval = 0.1,
+        audioEngine: AudioEngineProtocol = AVAudioEngine(),
+        player: AudioPlayerNodeProtocol = AVAudioPlayerNode(),
+        hapticEngine: HapticEngineProtocol? = nil
     ) throws {
         self.pulseInterval = pulseInterval
         self.pulseDuration = pulseDuration
-        
-        // Initialize haptic engine
-        guard CHHapticEngine.capabilitiesForHardware().supportsHaptics else {
-            throw HapticError.engineUnavailable
+        self.audioEngine = audioEngine
+        self.player = player
+
+        // Use the injected haptic engine, or build a real one (which throws
+        // HapticError.engineUnavailable on hardware without haptics support).
+        if let hapticEngine {
+            self.hapticEngine = hapticEngine
+        } else {
+            self.hapticEngine = try CHHapticEngineWrapper()
         }
-        self.hapticEngine = try CHHapticEngine()
-        
+
         // Create audio buffer (same as before)
         let frameCount = AVAudioFrameCount(sampleRate * pulseDuration)
         let format = AVAudioFormat(standardFormatWithSampleRate: sampleRate, channels: 1)!
@@ -54,8 +61,8 @@ public class PulsatingSinWaveGenerator: WaveGeneratorProtocol {
         }
         
         // Setup audio engine
-        audioEngine.attach(player)
-        audioEngine.connect(player, to: audioEngine.mainMixerNode, format: format)
+        audioEngine.attach(player.avAudioNode)
+        audioEngine.connect(player.avAudioNode, to: audioEngine.mainMixerNode, format: format)
         
         // Prepare haptic pattern
         let event = CHHapticEvent(
@@ -68,7 +75,7 @@ public class PulsatingSinWaveGenerator: WaveGeneratorProtocol {
             duration: pulseDuration
         )
         let pattern = try CHHapticPattern(events: [event], parameters: [])
-        self.hapticPlayer = try hapticEngine.makePlayer(with: pattern)
+        self.hapticPlayer = try self.hapticEngine.makePlayer(with: pattern)
     }
     
     deinit {

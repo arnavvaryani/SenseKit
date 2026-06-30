@@ -5,7 +5,6 @@
 //  Created by Arnav Varyani on 6/13/25.
 //
 
-
 import Testing
 import Foundation
 import AVFoundation
@@ -14,54 +13,54 @@ import AVFoundation
 @Suite("Edge Case Tests")
 @MainActor
 struct EdgeCaseTests {
-    
+
     @Test("Empty speech text handling")
     func emptySpeechText() {
-        let controller = SpeechController()
-        
+        let controller = SpeechController(synthesizer: MockSpeechSynthesizer())
+
         let task1 = controller.speak("")
         let task2 = controller.speak("   ")
-        
-        #expect(task1 != nil) // Empty strings are still spoken
+
+        #expect(task1 != nil) // Empty / whitespace strings are still spoken
         #expect(task2 != nil)
     }
-    
+
     @Test("Very long speech text")
     func veryLongSpeechText() {
-        let controller = SpeechController()
+        let controller = SpeechController(synthesizer: MockSpeechSynthesizer())
         let longText = String(repeating: "Hello ", count: 1000)
-        
+
         let task = controller.speak(longText)
-        
+
         #expect(task != nil)
         #expect(controller.currentText == longText)
     }
-    
-//    @Test("Rapid start/stop cycles")
-//    func rapidStartStop() async throws {
-//        let mockEngine = MockAudioEngine()
-//        let generator = SinWaveGenerator(frequency: 440, audioEngine: mockEngine)
-//        
-//        for _ in 0..<10 {
-//            try generator.start()
-//            generator.stop()
-//        }
-//        
-//        #expect(mockEngine.startCallCount == 10)
-//        #expect(mockEngine.stopCallCount == 10)
-//    }
-//    
+
+    @Test("Rapid start/stop cycles")
+    func rapidStartStop() throws {
+        let mockEngine = MockAudioEngine()
+        let generator = SinWaveGenerator(frequency: 440, audioEngine: mockEngine)
+
+        for _ in 0..<10 {
+            try generator.start()
+            generator.stop()
+        }
+
+        #expect(mockEngine.startCallCount == 10)
+        #expect(mockEngine.stopCallCount == 10)
+    }
+
     @Test("Nil callbacks don't crash")
-    func nilCallbacksHandling() async throws {
+    func nilCallbacksHandling() {
         let coordinator = SpeechCoordinator()
         coordinator.onUtteranceCompleted = nil
-        
-        // This should not crash
+
+        // This should not crash.
         coordinator.speechSynthesizer(
             AVSpeechSynthesizer(),
             didFinish: AVSpeechUtterance(string: "Test")
         )
-        
-        #expect(true) // If we get here, no crash occurred
+
+        #expect(Bool(true)) // Reaching here means no crash occurred.
     }
 }

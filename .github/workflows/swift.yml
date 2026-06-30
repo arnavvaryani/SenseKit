@@ -30,4 +30,7 @@ jobs:
         xcodebuild test \
           -scheme SenseKit \
           -destination "platform=iOS Simulator,id=$DEVICE_ID" \
-          -skipPackagePluginValidation
+          -skipPackagePluginValidation \
+          -test-timeouts-enabled YES \
+          -default-test-execution-time-allowance 60 \
+          -maximum-test-execution-time-allowance 120

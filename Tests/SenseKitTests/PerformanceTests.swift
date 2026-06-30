@@ -18,7 +18,9 @@ struct PerformanceTests {
         let mock = MockSpeechSynthesizer()
         let controller = SpeechController(synthesizer: mock, audioSession: MockAudioSession())
 
-        let iterations = 200
+        // Each speak() builds a real AVSpeechSynthesisVoice (~100ms on CI), so
+        // keep the count low; this verifies throughput/state, not micro-timing.
+        let iterations = 20
         let startTime = Date()
         for i in 0..<iterations {
             controller.speak("Message \(i)")

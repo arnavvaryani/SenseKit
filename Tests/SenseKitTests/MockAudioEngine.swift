@@ -66,7 +66,7 @@ final class MockAudioPlayerNode: AudioPlayerNodeProtocol {
     func scheduleBuffer(_ buffer: AVAudioPCMBuffer,
                         at when: AVAudioTime?,
                         options: AVAudioPlayerNodeBufferOptions,
-                        completionHandler: (() -> Void)?) {
+                        completionHandler: (@Sendable () -> Void)?) {
         scheduledBuffers.append(buffer)
         lastScheduledTime = when
         lastScheduledOptions = options

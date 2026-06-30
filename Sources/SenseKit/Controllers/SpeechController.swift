@@ -14,8 +14,8 @@ import Observation
 public class SpeechController {
     // Dependencies
     private let synthesizer: SpeechSynthesizerProtocol
-    private let coordinator: SpeechCoordinator  
-    private let audioSession: AVAudioSession
+    private let coordinator: SpeechCoordinator
+    private let audioSession: AudioSessionProtocol
     
     // Configuration
     private var config: SpeechConfiguration
@@ -30,7 +30,7 @@ public class SpeechController {
     
     public init(
         synthesizer: SpeechSynthesizerProtocol = AVSpeechSynthesizer(),
-        audioSession: AVAudioSession = AVAudioSession.sharedInstance(),  // Remove force cast
+        audioSession: AudioSessionProtocol = AVAudioSession.sharedInstance(),
         config: SpeechConfiguration = SpeechConfiguration()
     ) {
         self.synthesizer = synthesizer

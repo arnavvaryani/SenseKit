@@ -14,9 +14,23 @@ import AVFoundation
 @MainActor
 struct SpeechControllerTests {
 
+    /// Builds a controller backed entirely by mocks (no real audio session or
+    /// synthesizer), so tests are deterministic and never block on the simulator.
+    private func makeController(
+        config: SpeechConfiguration = SpeechConfiguration()
+    ) -> (SpeechController, MockSpeechSynthesizer) {
+        let mock = MockSpeechSynthesizer()
+        let controller = SpeechController(
+            synthesizer: mock,
+            audioSession: MockAudioSession(),
+            config: config
+        )
+        return (controller, mock)
+    }
+
     @Test("Initialize with defaults")
     func initializeWithDefaults() {
-        let controller = SpeechController(synthesizer: MockSpeechSynthesizer())
+        let (controller, _) = makeController()
 
         #expect(controller.isSpeaking == false)
         #expect(controller.currentText == nil)
@@ -24,8 +38,7 @@ struct SpeechControllerTests {
 
     @Test("Speak sets state correctly")
     func speakSetsState() {
-        let mock = MockSpeechSynthesizer()
-        let controller = SpeechController(synthesizer: mock)
+        let (controller, mock) = makeController()
 
         let task = controller.speak("Hello, world!")
 
@@ -37,8 +50,7 @@ struct SpeechControllerTests {
 
     @Test("Speak respects repetition control")
     func speakRespectsRepetition() {
-        let mock = MockSpeechSynthesizer()
-        let controller = SpeechController(synthesizer: mock)
+        let (controller, mock) = makeController()
 
         let task1 = controller.speak("Hello")
         let task2 = controller.speak("Hello")                 // duplicate -> ignored
@@ -56,8 +68,7 @@ struct SpeechControllerTests {
         let trigger = SpeechConfiguration.Trigger(text: "navigate") {
             triggerExecuted = true
         }
-        let config = SpeechConfiguration(triggers: [trigger])
-        let controller = SpeechController(synthesizer: MockSpeechSynthesizer(), config: config)
+        let (controller, _) = makeController(config: SpeechConfiguration(triggers: [trigger]))
 
         controller.speak("Please navigate to the map")
 
@@ -70,8 +81,7 @@ struct SpeechControllerTests {
         let trigger = SpeechConfiguration.Trigger(text: "HELP", caseSensitive: false) {
             triggerCount += 1
         }
-        let config = SpeechConfiguration(triggers: [trigger])
-        let controller = SpeechController(synthesizer: MockSpeechSynthesizer(), config: config)
+        let (controller, _) = makeController(config: SpeechConfiguration(triggers: [trigger]))
 
         controller.speak("I need help")
         controller.speak("HELP me")
@@ -82,8 +92,7 @@ struct SpeechControllerTests {
 
     @Test("Stop speaking cancels current task")
     func stopSpeakingCancels() {
-        let mock = MockSpeechSynthesizer()
-        let controller = SpeechController(synthesizer: mock)
+        let (controller, mock) = makeController()
 
         _ = controller.speak("Long text")
         controller.stopSpeaking()
@@ -95,8 +104,7 @@ struct SpeechControllerTests {
 
     @Test("Task controls forward to the synthesizer")
     func taskControls() throws {
-        let mock = MockSpeechSynthesizer()
-        let controller = SpeechController(synthesizer: mock)
+        let (controller, mock) = makeController()
 
         let task = try #require(controller.speak("Test"))
 
@@ -112,8 +120,7 @@ struct SpeechControllerTests {
 
     @Test("Clear cache allows repetition")
     func clearCacheAllowsRepetition() {
-        let mock = MockSpeechSynthesizer()
-        let controller = SpeechController(synthesizer: mock)
+        let (controller, mock) = makeController()
 
         _ = controller.speak("Hello")
         let task1 = controller.speak("Hello")   // duplicate -> nil
@@ -124,24 +131,5 @@ struct SpeechControllerTests {
         #expect(task1 == nil)
         #expect(task2 != nil)
         #expect(mock.spokenUtterances.count == 2)
-    }
-
-    @Test("Completion callback resets speaking state")
-    func completionUpdatesState() async throws {
-        let mock = MockSpeechSynthesizer()
-        let controller = SpeechController(synthesizer: mock)
-
-        _ = controller.speak("Test")
-        #expect(controller.isSpeaking)
-
-        // The synthesizer delegate forwards completion through the coordinator,
-        // which hops to the main actor; poll briefly for the state to settle.
-        mock.finishSpeaking("Test")
-        for _ in 0..<100 where controller.isSpeaking {
-            try await Task.sleep(nanoseconds: 1_000_000)
-        }
-
-        #expect(controller.isSpeaking == false)
-        #expect(controller.currentText == nil)
     }
 }

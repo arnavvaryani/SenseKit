@@ -16,3 +16,7 @@ public protocol AudioSessionProtocol: Sendable {
 
 extension AVAudioSession: @retroactive @unchecked Sendable {}
 
+// AVAudioSession already provides setCategory(_:mode:options:) and setActive(_:),
+// so it satisfies AudioSessionProtocol directly.
+extension AVAudioSession: AudioSessionProtocol {}
+

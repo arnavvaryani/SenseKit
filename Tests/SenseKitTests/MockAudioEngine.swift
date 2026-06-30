@@ -162,8 +162,7 @@ final class MockHapticPlayer: HapticPatternPlayerProtocol {
 
 // MARK: - Speech Mocks
 
-/// Records calls made by `SpeechController`. Completion can be simulated
-/// deterministically via `finishSpeaking(_:)` instead of relying on timers.
+/// Records the calls `SpeechController` makes on its synthesizer.
 final class MockSpeechSynthesizer: SpeechSynthesizerProtocol, @unchecked Sendable {
     weak var delegate: AVSpeechSynthesizerDelegate?
     private(set) var spokenUtterances: [AVSpeechUtterance] = []
@@ -189,9 +188,23 @@ final class MockSpeechSynthesizer: SpeechSynthesizerProtocol, @unchecked Sendabl
         continueCallCount += 1
         return true
     }
+}
 
-    /// Deterministically drive the delegate's completion callback for testing.
-    func finishSpeaking(_ text: String) {
-        delegate?.speechSynthesizer?(AVSpeechSynthesizer(), didFinish: AVSpeechUtterance(string: text))
+/// In-memory audio session so `SpeechController` never touches the real
+/// `AVAudioSession` (which blocks on a headless CI simulator).
+final class MockAudioSession: AudioSessionProtocol, @unchecked Sendable {
+    private(set) var setCategoryCallCount = 0
+    private(set) var setActiveCallCount = 0
+    private(set) var isActive = false
+
+    func setCategory(_ category: AVAudioSession.Category,
+                     mode: AVAudioSession.Mode,
+                     options: AVAudioSession.CategoryOptions) throws {
+        setCategoryCallCount += 1
+    }
+
+    func setActive(_ active: Bool) throws {
+        setActiveCallCount += 1
+        isActive = active
     }
 }

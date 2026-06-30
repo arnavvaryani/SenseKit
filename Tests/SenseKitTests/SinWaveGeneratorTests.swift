@@ -16,10 +16,14 @@ struct SinWaveGeneratorTests {
     @Test("Initialize attaches and connects a source node")
     func initializeWithParameters() {
         let mockEngine = MockAudioEngine()
-        _ = SinWaveGenerator(frequency: 440, sampleRate: 44_100, audioEngine: mockEngine)
+        let generator = SinWaveGenerator(frequency: 440, sampleRate: 44_100, audioEngine: mockEngine)
 
-        #expect(mockEngine.attachedNodes.count == 1)
-        #expect(mockEngine.connections.count == 1)
+        // Keep the generator alive across the assertions; otherwise deinit would
+        // detach/disconnect the node before we check.
+        withExtendedLifetime(generator) {
+            #expect(mockEngine.attachedNodes.count == 1)
+            #expect(mockEngine.connections.count == 1)
+        }
     }
 
     @Test("Start begins audio engine")

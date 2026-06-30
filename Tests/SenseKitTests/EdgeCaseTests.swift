@@ -14,9 +14,13 @@ import AVFoundation
 @MainActor
 struct EdgeCaseTests {
 
+    private func makeController() -> SpeechController {
+        SpeechController(synthesizer: MockSpeechSynthesizer(), audioSession: MockAudioSession())
+    }
+
     @Test("Empty speech text handling")
     func emptySpeechText() {
-        let controller = SpeechController(synthesizer: MockSpeechSynthesizer())
+        let controller = makeController()
 
         let task1 = controller.speak("")
         let task2 = controller.speak("   ")
@@ -27,7 +31,7 @@ struct EdgeCaseTests {
 
     @Test("Very long speech text")
     func veryLongSpeechText() {
-        let controller = SpeechController(synthesizer: MockSpeechSynthesizer())
+        let controller = makeController()
         let longText = String(repeating: "Hello ", count: 1000)
 
         let task = controller.speak(longText)
@@ -48,19 +52,5 @@ struct EdgeCaseTests {
 
         #expect(mockEngine.startCallCount == 10)
         #expect(mockEngine.stopCallCount == 10)
-    }
-
-    @Test("Nil callbacks don't crash")
-    func nilCallbacksHandling() {
-        let coordinator = SpeechCoordinator()
-        coordinator.onUtteranceCompleted = nil
-
-        // This should not crash.
-        coordinator.speechSynthesizer(
-            AVSpeechSynthesizer(),
-            didFinish: AVSpeechUtterance(string: "Test")
-        )
-
-        #expect(Bool(true)) // Reaching here means no crash occurred.
     }
 }

@@ -18,7 +18,10 @@ struct IntegrationTests {
     func speechAndHapticsIntegration() throws {
         let mockHapticEngine = MockHapticEngine()
         let hapticController = try HapticController(engine: mockHapticEngine)
-        let speechController = SpeechController(synthesizer: MockSpeechSynthesizer())
+        let speechController = SpeechController(
+            synthesizer: MockSpeechSynthesizer(),
+            audioSession: MockAudioSession()
+        )
 
         // Play a haptic pulse whenever the spoken text contains "vibrate".
         speechController.addTrigger(
@@ -37,8 +40,8 @@ struct IntegrationTests {
 
     @Test("Multiple controllers can coexist")
     func multipleControllersCoexist() throws {
-        let speechController1 = SpeechController(synthesizer: MockSpeechSynthesizer())
-        let speechController2 = SpeechController(synthesizer: MockSpeechSynthesizer())
+        let speechController1 = SpeechController(synthesizer: MockSpeechSynthesizer(), audioSession: MockAudioSession())
+        let speechController2 = SpeechController(synthesizer: MockSpeechSynthesizer(), audioSession: MockAudioSession())
 
         let mockHapticEngine1 = MockHapticEngine()
         let mockHapticEngine2 = MockHapticEngine()

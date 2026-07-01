@@ -16,7 +16,7 @@ struct PerformanceTests {
     @MainActor
     func speechPerformance() {
         let mock = MockSpeechSynthesizer()
-        let controller = SpeechController(synthesizer: mock, audioSession: MockAudioSession())
+        let controller = SpeechController(synthesizer: mock, audioSession: MockAudioSession(), config: SpeechConfiguration(voice: ""))
 
         // Each speak() builds a real AVSpeechSynthesisVoice (~100ms on CI), so
         // keep the count low; this verifies throughput/state, not micro-timing.

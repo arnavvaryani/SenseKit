@@ -68,7 +68,11 @@ public class SpeechController {
         spokenTexts.insert(text)
         
         let utterance = AVSpeechUtterance(string: text)
-        utterance.voice = AVSpeechSynthesisVoice(language: config.voice)
+        // An empty voice means "use the system default" and avoids the
+        // (slow) AVSpeechSynthesisVoice asset lookup.
+        if !config.voice.isEmpty {
+            utterance.voice = AVSpeechSynthesisVoice(language: config.voice)
+        }
         utterance.volume = config.volume
         utterance.rate = config.rate
         

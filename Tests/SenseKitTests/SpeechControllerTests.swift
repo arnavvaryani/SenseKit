@@ -17,7 +17,7 @@ struct SpeechControllerTests {
     /// Builds a controller backed entirely by mocks (no real audio session or
     /// synthesizer), so tests are deterministic and never block on the simulator.
     private func makeController(
-        config: SpeechConfiguration = SpeechConfiguration()
+        config: SpeechConfiguration = SpeechConfiguration(voice: "")
     ) -> (SpeechController, MockSpeechSynthesizer) {
         let mock = MockSpeechSynthesizer()
         let controller = SpeechController(
@@ -68,7 +68,7 @@ struct SpeechControllerTests {
         let trigger = SpeechConfiguration.Trigger(text: "navigate") {
             triggerExecuted = true
         }
-        let (controller, _) = makeController(config: SpeechConfiguration(triggers: [trigger]))
+        let (controller, _) = makeController(config: SpeechConfiguration(triggers: [trigger], voice: ""))
 
         controller.speak("Please navigate to the map")
 
@@ -81,7 +81,7 @@ struct SpeechControllerTests {
         let trigger = SpeechConfiguration.Trigger(text: "HELP", caseSensitive: false) {
             triggerCount += 1
         }
-        let (controller, _) = makeController(config: SpeechConfiguration(triggers: [trigger]))
+        let (controller, _) = makeController(config: SpeechConfiguration(triggers: [trigger], voice: ""))
 
         controller.speak("I need help")
         controller.speak("HELP me")

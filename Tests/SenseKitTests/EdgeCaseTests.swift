@@ -15,7 +15,7 @@ import AVFoundation
 struct EdgeCaseTests {
 
     private func makeController() -> SpeechController {
-        SpeechController(synthesizer: MockSpeechSynthesizer(), audioSession: MockAudioSession())
+        SpeechController(synthesizer: MockSpeechSynthesizer(), audioSession: MockAudioSession(), config: SpeechConfiguration(voice: ""))
     }
 
     @Test("Empty speech text handling")

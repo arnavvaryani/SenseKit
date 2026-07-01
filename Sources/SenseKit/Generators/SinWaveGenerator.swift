@@ -9,15 +9,20 @@
 import AVFoundation
 
 public class SinWaveGenerator: WaveGeneratorProtocol {
-    private let audioEngine = AVAudioEngine()
+    private let audioEngine: AudioEngineProtocol
     private let sampleRate: Double
     private let frequency: Double
     private var sourceNode: AVAudioSourceNode?
     private var phase: Double = 0.0
-    
-    public init(frequency: Double, sampleRate: Double = 44_100.0) {
+
+    public init(
+        frequency: Double,
+        sampleRate: Double = 44_100.0,
+        audioEngine: AudioEngineProtocol = AVAudioEngine()
+    ) {
         self.frequency = frequency
         self.sampleRate = sampleRate
+        self.audioEngine = audioEngine
         setupAudioEngine()
     }
     
